@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"os/user"
 
 	"github.com/docker/docker/pkg/mount"
 	"github.com/docopt/docopt-go"
@@ -13,9 +15,18 @@ import (
 var (
 	appVersion string
 	buildTime  string
+	logMsg     string
+	//DebugInformation use this to print debug
+	DebugInformation bool
 )
 
-func createZdevice(zfsDevice string, debuginfo bool) {
+func printString(logMessage string) {
+	if DebugInformation == true {
+		log.Printf(logMessage)
+	}
+}
+
+func createZdevice(zfsDevice string) {
 	_, err := zfs.GetDataset(zfsDevice)
 
 	if err != nil {
@@ -23,77 +34,65 @@ func createZdevice(zfsDevice string, debuginfo bool) {
 		if err != nil {
 			panic(createErr)
 		}
-		if debuginfo == true {
-			log.Printf("created filesystem %v", zfsDevice)
-		}
+		logMsg = "created filesystem " + zfsDevice
 	} else {
-		if debuginfo == true {
-			log.Printf("filesystem %v already existing", zfsDevice)
-		}
+		logMsg = "filesystem " + zfsDevice + "already existing"
 	}
-
+	printString(logMsg)
 }
 
-func ensureG10kMounted(zfsDevice string, debuginfo bool) {
-	if _, err := os.Stat("/g10k"); os.IsNotExist(err) {
-		os.Mkdir("/g10k", 0755)
+func ensureG10kMounted(zfsDevice, gkMountpoint string) {
+	if _, err := os.Stat(gkMountpoint); os.IsNotExist(err) {
+		os.Mkdir(gkMountpoint, 0755)
 	}
 
-	status, _ := mount.Mounted("/g10k")
+	status, _ := mount.Mounted(gkMountpoint)
 	if status == false {
 		g10kDataset, _ := zfs.GetDataset(zfsDevice)
 		_, err := g10kDataset.Mount(false, nil)
 		if err != nil {
 			panic(err)
 		} else {
-			if debuginfo == true {
-				log.Printf("mounted filesytem %v", zfsDevice)
-			}
+			logMsg = "mounted filesytem " + zfsDevice
 		}
 	} else {
-		if debuginfo == true {
-			log.Printf("filesystem %v already mounted", zfsDevice)
-		}
+		logMsg = "filesytem " + zfsDevice + "already mounted"
 	}
+	printString(logMsg)
 }
 
-func checkSnapshots(zfsDevice string, debuginfo bool) [2]bool {
+func checkSnapshots(zfsDevice string) [2]bool {
 	evenStatus := true
 	oddStatus := true
 	_, evenErr := zfs.GetDataset(zfsDevice + "@Even")
 	if evenErr != nil {
 		evenStatus = false
 	} else {
-		if debuginfo == true {
-			log.Printf("found snapshot %v@Even", zfsDevice)
-		}
+		logMsg = "found snapshot " + zfsDevice + "@Even"
 	}
 	_, oddErr := zfs.GetDataset(zfsDevice + "@Odd")
 	if oddErr != nil {
 		oddStatus = false
 	} else {
-		if debuginfo == true {
-			log.Printf("found snapshot %v@Odd", zfsDevice)
-		}
+		logMsg = "found snapshot " + zfsDevice + "@Odd"
 	}
+	printString(logMsg)
 
 	EvenOddStatus := [2]bool{evenStatus, oddStatus}
 	return EvenOddStatus
 }
 
-func createSnapshot(nextSnap string, zfsDevice string, debuginfo bool) {
+func createSnapshot(nextSnap, zfsDevice string) {
 	zfsDataset, _ := zfs.GetDataset(zfsDevice)
 	_, err := zfsDataset.Snapshot(nextSnap, false)
 	if err != nil {
 		panic(err)
 	} else {
-		if debuginfo == true {
-			log.Printf("created snapshot filesytem %v@%v", zfsDevice, nextSnap)
-		}
+		printString("created snapshot " + zfsDevice + "@" + nextSnap)
 	}
 }
 
-func destroySnapshot(nextSnap string, zfsDevice string, debuginfo bool) {
+func destroySnapshot(nextSnap, zfsDevice string) {
 	killSnap := "Even"
 	if nextSnap == "Even" {
 		killSnap = "Odd"
@@ -104,38 +103,52 @@ func destroySnapshot(nextSnap string, zfsDevice string, debuginfo bool) {
 		if err != nil {
 			panic(err)
 		} else {
-			if debuginfo == true {
-				log.Printf("destroyed snapshot %v@%v", zfsDevice, killSnap)
-			}
+			printString("destroyed snapshot " + zfsDevice + "@" + killSnap)
 		}
 	}
 }
 
-func umountSnapshots(mountPoint string, debuginfo bool) {
+func umountSnapshots(mountPoint string) {
 	status, _ := mount.Mounted(mountPoint)
 	if status == true {
 		err := mount.Unmount(mountPoint)
 		if err != nil {
 			panic(err)
 		} else {
-			if debuginfo == true {
-				log.Printf("unmounted %v", mountPoint)
-			}
+			printString("destroyed snapshot " + mountPoint)
 		}
 	}
 }
 
-func mountSnapshots(mountPoint string, zfsDevice string, nextSnap string, debuginfo bool) {
-	// func Mount(device, target, mType, options string) error
+func mountSnapshots(mountPoint, zfsDevice, nextSnap string) {
 	mountDevice := zfsDevice + "@" + nextSnap
 	err := mount.Mount(mountDevice, mountPoint, "zfs", "defaults")
 	if err != nil {
 		panic(err)
 	} else {
-		if debuginfo == true {
-			log.Printf("mounted %v@%v on %v", zfsDevice, nextSnap, mountPoint)
-		}
+		printString("mounted " + zfsDevice + "@" + nextSnap)
 	}
+}
+
+func checkUserGroupExistence(userName, groupName string) {
+	_, userErr := user.Lookup(userName)
+	if userErr != nil {
+		printString("the user " + userName + " does not exist")
+		panic(userErr)
+	}
+	_, groupErr := user.LookupGroup(groupName)
+	if groupErr != nil {
+		printString("the group " + groupName + " does not exist")
+		panic(userErr)
+	}
+}
+
+// ChownR walks inside the directory and assign every file to given user and group
+func ChownR(path, userName, groupName string) {
+	printString("fixing file permissions under " + path)
+	uidgid := fmt.Sprintf("%v:%v", userName, groupName)
+	cmd := exec.Command("chown", "-R", uidgid, path)
+	cmd.Run()
 }
 
 func main() {
@@ -146,7 +159,7 @@ func main() {
   - mount the latest snapshot, by default on /etc/puppetlabs/code
 
 Usage:
-  g10k-zfs --pool=POOL [--mountpoint=MOUNTPOINT] [--debug]
+  g10k-zfs --pool=POOL [--mountpoint=MOUNTPOINT] [--owner=OWNER] [--group=GROUP] [--debug]
   g10k-zfs -v | --version
   g10k-zfs -b | --build
   g10k-zfs -h | --help
@@ -154,7 +167,10 @@ Usage:
 Options:
   -h --help           Show this screen
   -p --pool=POOL               ZFS Pool
-  -m --mountpoint=MOUNTPOINT   Output file [default: '/etc/puppetlabs/code']
+  -m --mountpoint=MOUNTPOINT   Output file [default: /etc/puppetlabs/code]
+  -o --owner=OWNER             Files owner [default: puppet]
+  -g --group=GROUP             Files group [default: puppet]
+  -gk --g10k=G10K              G10k mount point [default: /g10k]
   -d --debug                   Print password and full key path
   -v --version                 Print version exit
   -b --build                   Print version and build information and exit`
@@ -166,18 +182,23 @@ Options:
 		os.Exit(0)
 	}
 
-	debugInformation := false
+	DebugInformation = false
 	if arguments["--debug"] == true {
-		debugInformation = true
+		DebugInformation = true
 	}
 
 	mountpoint := fmt.Sprintf("%v", arguments["--mountpoint"])
+	g10kMountpoint := fmt.Sprintf("%v", arguments["--g10k"])
 	zPool := fmt.Sprintf("%v", arguments["--pool"])
-	zDevice := zPool + "/g10k"
+	zDevice := zPool + g10kMountpoint
+	username := fmt.Sprintf("%v", arguments["--owner"])
+	groupname := fmt.Sprintf("%v", arguments["--group"])
 
-	createZdevice(zDevice, debugInformation)
-	ensureG10kMounted(zDevice, debugInformation)
-	SnapshotStatus := checkSnapshots(zDevice, debugInformation)
+	checkUserGroupExistence(username, groupname)
+	createZdevice(zDevice)
+	ensureG10kMounted(zDevice, g10kMountpoint)
+	ChownR(g10kMountpoint, username, groupname)
+	SnapshotStatus := checkSnapshots(zDevice)
 
 	nextSnapshot := "Odd"
 	if SnapshotStatus[0] == false && SnapshotStatus[1] == false {
@@ -188,15 +209,14 @@ Options:
 		nextSnapshot = "Even"
 	} else if SnapshotStatus[0] == true && SnapshotStatus[1] == true {
 		// this is anomalous: we kill 'em all and start with Odd
-		log.Printf("here we are")
-		umountSnapshots(mountpoint, debugInformation)
-		destroySnapshot("Even", zDevice, debugInformation)
-		destroySnapshot("Odd", zDevice, debugInformation)
+		umountSnapshots(mountpoint)
+		destroySnapshot("Even", zDevice)
+		destroySnapshot("Odd", zDevice)
 	}
 
-	createSnapshot(nextSnapshot, zDevice, debugInformation)
-	umountSnapshots(mountpoint, debugInformation)
-	mountSnapshots(mountpoint, zDevice, nextSnapshot, debugInformation)
-	destroySnapshot(nextSnapshot, zDevice, debugInformation)
+	createSnapshot(nextSnapshot, zDevice)
+	umountSnapshots(mountpoint)
+	mountSnapshots(mountpoint, zDevice, nextSnapshot)
+	destroySnapshot(nextSnapshot, zDevice)
 
 }

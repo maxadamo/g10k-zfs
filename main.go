@@ -155,21 +155,22 @@ func main() {
   - mount the latest snapshot, by default on /etc/puppetlabs/code
 
 Usage:
-  g10k-zfs --pool=POOL [--mountpoint=MOUNTPOINT] [--owner=OWNER] [--group=GROUP] [--g10k-mount=G10KMOUNT] [--debug]
+  g10k-zfs --pool=POOL [--mountpoint=MOUNTPOINT] [--owner=OWNER] [--group=GROUP] [--g10k-mount=G10KMOUNT] [--fix-owner] [--debug]
   g10k-zfs -v | --version
   g10k-zfs -b | --build
   g10k-zfs -h | --help
 
 Options:
   -h --help           Show this screen
-  -p --pool=POOL               ZFS Pool
-  -m --mountpoint=MOUNTPOINT   Output file [default: /etc/puppetlabs/code]
-  -o --owner=OWNER             Files owner [default: puppet]
-  -g --group=GROUP             Files group [default: puppet]
-  -k --g10k-mount=G10KMOUNT    G10k mount point [default: /g10k]
-  -d --debug                   Print password and full key path
-  -v --version                 Print version exit
-  -b --build                   Print version and build information and exit`
+  -p --pool=POOL              ZFS Pool
+  -m --mountpoint=MOUNTPOINT  Output file [default: /etc/puppetlabs/code]
+  -f --fix-owner              Whether to fix file ownership
+  -o --owner=OWNER            Files owner [default: puppet]
+  -g --group=GROUP            Files group [default: puppet]
+  -k --g10k-mount=G10KMOUNT   G10k mount point [default: /g10k]
+  -d --debug                  Print password and full key path
+  -v --version                Print version exit
+  -b --build                  Print version and build information and exit`
 
 	arguments, _ := docopt.Parse(usage, nil, true, appVersion, false)
 
@@ -189,18 +190,25 @@ Options:
 	zDevice := zPool + g10kMountpoint
 	username := fmt.Sprintf("%v", arguments["--owner"])
 	groupname := fmt.Sprintf("%v", arguments["--group"])
-
-	checkUserGroupExistence(username, groupname)
+	if arguments["--fix-owner"] != true {
+		if username != "puppet" || groupname != "puppet" {
+			fmt.Printf("you have set either owner or group without using --fix-owner\n")
+			os.Exit(1)
+		}
+	}
+	if arguments["--fix-owner"] == true {
+		checkUserGroupExistence(username, groupname)
+	}
 	createZdevice(zDevice)
 	ensureG10kMounted(zDevice, g10kMountpoint)
-	ChownR(g10kMountpoint, username, groupname)
+	if arguments["--fix-owner"] == true {
+		ChownR(g10kMountpoint, username, groupname)
+	}
 	SnapshotStatus := checkSnapshots(zDevice)
 
 	nextSnapshot := "Odd"
 	if SnapshotStatus[0] == false && SnapshotStatus[1] == false {
 		nextSnapshot = "Even"
-	} else if SnapshotStatus[0] == true && SnapshotStatus[1] == false {
-		nextSnapshot = "Odd"
 	} else if SnapshotStatus[0] == false && SnapshotStatus[1] == true {
 		nextSnapshot = "Even"
 	} else if SnapshotStatus[0] == true && SnapshotStatus[1] == true {

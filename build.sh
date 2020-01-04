@@ -31,5 +31,5 @@ if which fpm; then
     fpm -f -t deb -n $BIN_NAME -v ${PROG_VERSION}-1 --maintainer "$EMAIL" --vendor "$EMAIL" \
         -a amd64 --description "$DESC" -s dir ./${BIN_NAME}=/usr/local/bin/${BIN_NAME}
 else
-    echo -e "if you want to create RPM and DEB packages, please install fpm:\n - gem install fpm"
+    echo -e "if you want to create RPM and DEB packages, please install fpm:\n - gem install fpm\n"
 fi

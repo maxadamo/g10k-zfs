@@ -27,7 +27,6 @@ func printString(logMessage string) {
 
 func createZdevice(zfsDevice string) {
 	_, err := zfs.GetDataset(zfsDevice)
-
 	if err != nil {
 		_, createErr := zfs.CreateFilesystem(zfsDevice, nil)
 		if err != nil {
@@ -139,8 +138,7 @@ func checkUserGroupExistence(userName, groupName string) {
 	}
 }
 
-// ChownR walks inside the directory and assign every file to given user and group
-func ChownR(path, userName, groupName string) {
+func chownR(path, userName, groupName string) {
 	printString("fixing files ownership under " + path)
 	uidgid := fmt.Sprintf("%v:%v", userName, groupName)
 	cmd := exec.Command("chown", "-R", uidgid, path)
@@ -202,7 +200,7 @@ Options:
 	createZdevice(zDevice)
 	ensureG10kMounted(zDevice, g10kMountpoint)
 	if arguments["--fix-owner"] == true {
-		ChownR(g10kMountpoint, username, groupname)
+		chownR(g10kMountpoint, username, groupname)
 	}
 	SnapshotStatus := checkSnapshots(zDevice)
 

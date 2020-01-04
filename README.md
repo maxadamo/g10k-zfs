@@ -41,7 +41,7 @@ Options:
 
 ## Examples
 
-These are valid examples:
+Valid examples are:
 
 ```sh
 g10k-zfs -p code -d
@@ -59,5 +59,6 @@ to compile the latest tag:
 
 ```sh
 git clone git@github.com:maxadamo/g10k-zfs.git
+cd g10k-zfs
 ./build.sh
 ```

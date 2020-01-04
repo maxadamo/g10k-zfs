@@ -159,7 +159,7 @@ func main() {
   - mount the latest snapshot, by default on /etc/puppetlabs/code
 
 Usage:
-  g10k-zfs --pool=POOL [--mountpoint=MOUNTPOINT] [--owner=OWNER] [--group=GROUP] [--debug]
+  g10k-zfs --pool=POOL [--mountpoint=MOUNTPOINT] [--owner=OWNER] [--group=GROUP] [-g10k-mount=G10KMOUNT] [--debug]
   g10k-zfs -v | --version
   g10k-zfs -b | --build
   g10k-zfs -h | --help
@@ -170,7 +170,7 @@ Options:
   -m --mountpoint=MOUNTPOINT   Output file [default: /etc/puppetlabs/code]
   -o --owner=OWNER             Files owner [default: puppet]
   -g --group=GROUP             Files group [default: puppet]
-  -gk --g10k=G10K              G10k mount point [default: /g10k]
+  -k --g10k-mount=G10KMOUNT    G10k mount point [default: /g10k]
   -d --debug                   Print password and full key path
   -v --version                 Print version exit
   -b --build                   Print version and build information and exit`

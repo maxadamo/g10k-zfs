@@ -15,3 +15,5 @@
 # vendor/
 g10k-zfs
 .*.sw[op]
+*.rpm
+*.deb

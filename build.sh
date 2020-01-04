@@ -25,7 +25,7 @@ fi
 echo -e "\nthe binary was compiled and it is avilable as:\n - $(pwd)/${BIN_NAME}\n"
 
 # create RPM and DEB for amd64
-if which fpm; then
+if which fpm >/dev/null; then
     fpm -f -t rpm -n $BIN_NAME -v $PROG_VERSION --maintainer "$EMAIL" --vendor "$EMAIL" \
         -a x86_64 --description "$DESC" -s dir ./${BIN_NAME}=/usr/local/bin//${BIN_NAME}
     fpm -f -t deb -n $BIN_NAME -v ${PROG_VERSION}-1 --maintainer "$EMAIL" --vendor "$EMAIL" \

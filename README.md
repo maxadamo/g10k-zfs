@@ -10,10 +10,12 @@ Add ZFS snapshot capability to G10K.
   
 ## Requirements
 
-1. ZOL (ZFS On Linux) configured on Linux
-1. One ZFS Pool configured (this tool will create a filesystem called `g10k` inside your pool and mount it on `/g10k`). You can read the instructions on this page: [setup-zfs-storage-pool](https://tutorials.ubuntu.com/tutorial/setup-zfs-storage-pool).
-1. The default mount point is `/etc/puppetlabs/code`, which means that you need to populate the filesystem with all the files that you had under `/etc/puppetlabs/code`
-1. **g10k will be pointing to the mount point /g10k**. This is the read/write mount point. The mount point on `/etc/puppetlabs/code` is a read only mount point for the snapshot (i.e. g10k could not write there)
+* 1\. ZOL (ZFS On Linux) configured on Linux
+* 2\. One ZFS Pool configured (this tool will create a filesystem called `g10k` inside your pool and mount it on `/g10k`). You can use the following instructions:
+  * 2.1\. read this help page: [setup-zfs-storage-pool](https://tutorials.ubuntu.com/tutorial/setup-zfs-storage-pool)
+  * 2.2\. use Puppet to create the pool: [zfs_core](https://forge.puppet.com/puppetlabs/zfs_core).
+* 3\.  The default mount point is `/etc/puppetlabs/code`, which means that you need to populate the filesystem with all the files that you had under `/etc/puppetlabs/code`
+* 4\.  **g10k will be pointing to the mount point /g10k**. This is the read/write mount point. The mount point on `/etc/puppetlabs/code` is a read only mount point for the snapshot (i.e. g10k could not write there)
 
 ## Usage
 

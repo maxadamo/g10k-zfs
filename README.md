@@ -7,7 +7,7 @@ Add ZFS snapshot capability to G10K.
 * creates ZFS snapshots on an existing ZFS pool
 * rotates in a loop two snapshots, called `Even` and `Odd`
 * mounts either `Even` or `Odd` depending on the rotation position
-  
+
 ## Requirements
 
 * 1\. ZOL (ZFS On Linux) configured on Linux
@@ -21,18 +21,22 @@ Add ZFS snapshot capability to G10K.
 ## Usage
 
 ```sh
-  g10k-zfs --pool=POOL [--mountpoint=MOUNTPOINT] [--debug]
+  g10k-zfs --pool=POOL [--mountpoint=MOUNTPOINT] [--owner=OWNER] [--group=GROUP] [--g10k-mount=G10KMOUNT] [--fix-owner] [--debug]
   g10k-zfs -v | --version
   g10k-zfs -b | --build
   g10k-zfs -h | --help
 
 Options:
   -h --help           Show this screen
-  -p --pool=POOL               ZFS Pool
-  -m --mountpoint=MOUNTPOINT   Output file [default: '/etc/puppetlabs/code']
-  -d --debug                   Print password and full key path
-  -v --version                 Print version exit
-  -b --build                   Print version and build information and exit
+  -p --pool=POOL              ZFS Pool
+  -m --mountpoint=MOUNTPOINT  Output file [default: /etc/puppetlabs/code]
+  -f --fix-owner              Whether to fix file ownership
+  -o --owner=OWNER            Files owner [default: puppet]
+  -g --group=GROUP            Files group [default: puppet]
+  -k --g10k-mount=G10KMOUNT   G10k mount point [default: /g10k]
+  -d --debug                  Print password and full key path
+  -v --version                Print version exit
+  -b --build                  Print version and build information and exit
 ```
 
 ## Examples

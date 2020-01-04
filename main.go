@@ -159,9 +159,9 @@ Usage:
   g10k-zfs -h | --help
 
 Options:
-  -h --help           Show this screen
+  -h --help                   Show this screen
   -p --pool=POOL              ZFS Pool
-  -m --mountpoint=MOUNTPOINT  Output file [default: /etc/puppetlabs/code]
+  -m --mountpoint=MOUNTPOINT  Puppet code mount point [default: /etc/puppetlabs/code]
   -f --fix-owner              Whether to fix file ownership
   -o --owner=OWNER            Files owner [default: puppet]
   -g --group=GROUP            Files group [default: puppet]

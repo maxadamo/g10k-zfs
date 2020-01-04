@@ -48,4 +48,9 @@ g10k-zfs -p code -m /my/destination -d
 
 ## Installation
 
-run the build.sh script to compile the latest tag: `./build.sh`
+to compile the latest tag:
+
+```sh
+git clone git@github.com:maxadamo/g10k-zfs.git
+./build.sh
+```

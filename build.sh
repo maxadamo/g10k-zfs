@@ -20,4 +20,4 @@ if [ $? -gt 0 ]; then
   exit
 fi
 
-echo -e "\nthe binary was compiled and it is avilable as:\n - ./${BIN_NAME}\n"
+echo -e "\nthe binary was compiled and it is avilable as:\n - $(pwd)/${BIN_NAME}\n"

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"time"
 
 	"github.com/docker/docker/pkg/mount"
 	"github.com/docopt/docopt-go"
@@ -57,26 +58,6 @@ func ensureG10kMounted(zfsDevice, gkMountpoint string) {
 	}
 }
 
-func checkSnapshots(zfsDevice string) [2]bool {
-	evenStatus := true
-	oddStatus := true
-	_, evenErr := zfs.GetDataset(zfsDevice + "@Even")
-	if evenErr != nil {
-		evenStatus = false
-	} else {
-		printString("found snapshot " + zfsDevice + "@Even")
-	}
-	_, oddErr := zfs.GetDataset(zfsDevice + "@Odd")
-	if oddErr != nil {
-		oddStatus = false
-	} else {
-		printString("found snapshot " + zfsDevice + "@Odd")
-	}
-
-	EvenOddStatus := [2]bool{evenStatus, oddStatus}
-	return EvenOddStatus
-}
-
 func createSnapshot(nextSnap, zfsDevice string) {
 	zfsDataset, _ := zfs.GetDataset(zfsDevice)
 	_, err := zfsDataset.Snapshot(nextSnap, false)
@@ -87,19 +68,19 @@ func createSnapshot(nextSnap, zfsDevice string) {
 	}
 }
 
-func destroySnapshot(nextSnap, zfsDevice string) {
-	killSnap := "Even"
-	if nextSnap == "Even" {
-		killSnap = "Odd"
-	}
-	zfsDataset, err := zfs.GetDataset(zfsDevice + "@" + killSnap)
-	if err == nil {
-		err := zfsDataset.Destroy(0)
-		if err != nil {
-			panic(err)
-		} else {
-			printString("destroyed snapshot " + zfsDevice + "@" + killSnap)
+func destroySnapshots(snapList []*zfs.Dataset) {
+	for _, eachDataset := range snapList {
+		zfsDevName := fmt.Sprintf("%v", eachDataset.Name)
+		zfsDataset, err := zfs.GetDataset(zfsDevName)
+		if err == nil {
+			err := zfsDataset.Destroy(16)
+			if err != nil {
+				panic(err)
+			} else {
+				printString("destroyed snapshot " + zfsDevName)
+			}
 		}
+
 	}
 }
 
@@ -182,6 +163,11 @@ Options:
 		DebugInformation = true
 	}
 
+	// define snapshot name
+	currentTime := time.Now()
+	nextSnapshot := fmt.Sprintf(currentTime.Format("Date-02-Jan-2006_Time-15.4.5"))
+	snapshotList, _ := zfs.Snapshots("")
+
 	mountpoint := fmt.Sprintf("%v", arguments["--mountpoint"])
 	g10kMountpoint := fmt.Sprintf("%v", arguments["--g10k-mount"])
 	zPool := fmt.Sprintf("%v", arguments["--pool"])
@@ -202,23 +188,10 @@ Options:
 	if arguments["--fix-owner"] == true {
 		chownR(g10kMountpoint, username, groupname)
 	}
-	SnapshotStatus := checkSnapshots(zDevice)
-
-	nextSnapshot := "Odd"
-	if SnapshotStatus[0] == false && SnapshotStatus[1] == false {
-		nextSnapshot = "Even"
-	} else if SnapshotStatus[0] == false && SnapshotStatus[1] == true {
-		nextSnapshot = "Even"
-	} else if SnapshotStatus[0] == true && SnapshotStatus[1] == true {
-		// this is an odd situation: we kill 'em all and start with Odd
-		umountSnapshot(mountpoint)
-		destroySnapshot("Even", zDevice)
-		destroySnapshot("Odd", zDevice)
-	}
 
 	createSnapshot(nextSnapshot, zDevice)
 	umountSnapshot(mountpoint)
 	mountSnapshot(mountpoint, zDevice, nextSnapshot)
-	destroySnapshot(nextSnapshot, zDevice)
+	destroySnapshots(snapshotList)
 
 }

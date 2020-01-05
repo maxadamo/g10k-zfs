@@ -8,6 +8,7 @@ EMAIL="Massimiliano Adamo <maxadamo@gmail.com>"
 DESC="leverage ZFS snapshots for G10K "
 export BIN_NAME PATH GOPATH
 
+git pull
 LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
 PROG_VERSION=$(echo $LATEST_TAG | sed -e 's/^v//')
 BUILDTIME=$(date -u '+%Y-%m-%d_%H:%M:%S')

@@ -2,7 +2,7 @@
 
 ## Description
 
-Add ZFS snapshot capability to G10K.
+Add ZFS snapshot capability to [G10K](https://github.com/xorpaul/g10k/).
 
 * creates a new ZFS r/o snapshot whose name contains a timestamp (i.e.: `code/g10k@Date-06-Jan-2020_Time-16.28.42`)
 * unmount the currently mounted snapshot

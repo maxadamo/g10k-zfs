@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"os/user"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/pkg/mount"
@@ -68,19 +71,40 @@ func createSnapshot(nextSnap, zfsDevice string) {
 	}
 }
 
-func destroySnapshots(snapList []*zfs.Dataset) {
+func destroySnapshots(snapList []*zfs.Dataset, zfsPool string) {
 	for _, eachDataset := range snapList {
 		zfsDevName := fmt.Sprintf("%v", eachDataset.Name)
-		zfsDataset, err := zfs.GetDataset(zfsDevName)
-		if err == nil {
-			err := zfsDataset.Destroy(16)
+		match, _ := regexp.MatchString("^"+zfsPool+"/g10k@+", zfsDevName)
+		if match == true {
+			// ensure that device is not mounted
+			f, err := os.Open("/proc/self/mountinfo")
 			if err != nil {
 				panic(err)
-			} else {
-				printString("destroyed snapshot " + zfsDevName)
+			}
+			defer f.Close()
+
+			mountedLine := "unmounted"
+			// Splits on newlines by default.
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				if strings.Contains(scanner.Text(), zfsDevName) {
+					mountedLine = scanner.Text()
+				}
+			}
+			if mountedLine != "unmounted" {
+				snapMount := strings.Split(mountedLine, " ")[4]
+				umountSnapshot(snapMount)
+			}
+			zfsDataset, err := zfs.GetDataset(zfsDevName)
+			if err == nil {
+				err := zfsDataset.Destroy(16)
+				if err != nil {
+					panic(err)
+				} else {
+					printString("destroyed snapshot " + zfsDevName)
+				}
 			}
 		}
-
 	}
 }
 
@@ -163,15 +187,24 @@ Options:
 		DebugInformation = true
 	}
 
-	// define snapshot name
-	currentTime := time.Now()
-	nextSnapshot := fmt.Sprintf(currentTime.Format("Date-02-Jan-2006_Time-15.4.5"))
-	snapshotList, _ := zfs.Snapshots("")
-
 	mountpoint := fmt.Sprintf("%v", arguments["--mountpoint"])
 	g10kMountpoint := fmt.Sprintf("%v", arguments["--g10k-mount"])
 	zPool := fmt.Sprintf("%v", arguments["--pool"])
 	zDevice := zPool + g10kMountpoint
+
+	// define snapshot name
+	currentTime := time.Now()
+	nextSnapshot := fmt.Sprintf(currentTime.Format("Date-02-Jan-2006_Time-15.4.5"))
+	snapshotList, _ := zfs.Snapshots("")
+	//for _, eachDataset := range snapshotList {
+	//	//dataSetZfs := fmt.Sprintf("%v\n", eachDataset)
+	//	devName := fmt.Sprintf("%v\n", eachDataset.Name)
+	//	match, _ := regexp.MatchString("^"+zPool+"/g10k@+", devName)
+	//	if match == true {
+	//		fmt.Printf("%v", devName)
+	//	}
+	//}
+	//os.Exit(0)
 	username := fmt.Sprintf("%v", arguments["--owner"])
 	groupname := fmt.Sprintf("%v", arguments["--group"])
 	if arguments["--fix-owner"] != true {
@@ -192,6 +225,6 @@ Options:
 	createSnapshot(nextSnapshot, zDevice)
 	umountSnapshot(mountpoint)
 	mountSnapshot(mountpoint, zDevice, nextSnapshot)
-	destroySnapshots(snapshotList)
+	destroySnapshots(snapshotList, zPool)
 
 }

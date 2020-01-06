@@ -153,9 +153,10 @@ func chownR(path, userName, groupName string) {
 func main() {
 
 	usage := `G10k ZFS:
-  - create ZFS snapshots on an existing ZFS pool
-  - rotate the snapshots
-  - mount the latest snapshot, by default on /etc/puppetlabs/code
+  - creates a ZFS r/o snapshot whose name contains a timestamp
+  - unmount the currently mounted snapshot
+  - mount the new snapshot
+  - deletes the old snapshot
 
 Usage:
   g10k-zfs --pool=POOL [--mountpoint=MOUNTPOINT] [--owner=OWNER] [--group=GROUP] [--g10k-mount=G10KMOUNT] [--fix-owner] [--debug]
@@ -171,7 +172,7 @@ Options:
   -o --owner=OWNER            Files owner [default: puppet]
   -g --group=GROUP            Files group [default: puppet]
   -k --g10k-mount=G10KMOUNT   G10k mount point [default: /g10k]
-  -d --debug                  Print password and full key path
+  -d --debug                  Print messages to the console
   -v --version                Print version exit
   -b --build                  Print version and build information and exit`
 
@@ -196,15 +197,7 @@ Options:
 	currentTime := time.Now()
 	nextSnapshot := fmt.Sprintf(currentTime.Format("Date-02-Jan-2006_Time-15.4.5"))
 	snapshotList, _ := zfs.Snapshots("")
-	//for _, eachDataset := range snapshotList {
-	//	//dataSetZfs := fmt.Sprintf("%v\n", eachDataset)
-	//	devName := fmt.Sprintf("%v\n", eachDataset.Name)
-	//	match, _ := regexp.MatchString("^"+zPool+"/g10k@+", devName)
-	//	if match == true {
-	//		fmt.Printf("%v", devName)
-	//	}
-	//}
-	//os.Exit(0)
+
 	username := fmt.Sprintf("%v", arguments["--owner"])
 	groupname := fmt.Sprintf("%v", arguments["--group"])
 	if arguments["--fix-owner"] != true {
@@ -221,7 +214,6 @@ Options:
 	if arguments["--fix-owner"] == true {
 		chownR(g10kMountpoint, username, groupname)
 	}
-
 	createSnapshot(nextSnapshot, zDevice)
 	umountSnapshot(mountpoint)
 	mountSnapshot(mountpoint, zDevice, nextSnapshot)

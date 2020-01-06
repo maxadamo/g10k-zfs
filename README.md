@@ -4,14 +4,15 @@
 
 Add ZFS snapshot capability to G10K.
 
-* creates ZFS snapshots on an existing ZFS pool
-* rotates in a loop two snapshots, called `Even` and `Odd`
-* mounts either `Even` or `Odd` depending on the rotation position
+* creates a new ZFS r/o snapshot whose name contains a timestamp (i.e.: `code/g10k@Date-06-Jan-2020_Time-16.28.42`)
+* unmount the currently mounted snapshot
+* mount the new snapshot
+* deletes the old snapshot
 
 ## Requirements
 
 * 1\. ZOL (ZFS On Linux) configured on Linux
-* 2\. One ZFS Pool configured (this tool will create a filesystem called `g10k` inside your pool and mount it on `/g10k`). You can use the following instructions:
+* 2\. One ZFS Pool configured (this tool will create a filesystem called `g10k` inside your pool and mount it, by default, on `/g10k`). You can use one of the following steps:
   * 2.1\. read this help page: [setup-zfs-storage-pool](https://tutorials.ubuntu.com/tutorial/setup-zfs-storage-pool)
   * 2.2\. use Puppet to create the pool: [zfs_core](https://forge.puppet.com/puppetlabs/zfs_core).
 * 3\.  The default mount point is `/etc/puppetlabs/code`, which means that you need to populate the filesystem with all the files that you had under `/etc/puppetlabs/code`
@@ -27,14 +28,14 @@ Add ZFS snapshot capability to G10K.
   g10k-zfs -h | --help
 
 Options:
-  -h --help           Show this screen
+  -h --help                   Show this screen
   -p --pool=POOL              ZFS Pool
   -m --mountpoint=MOUNTPOINT  Output file [default: /etc/puppetlabs/code]
   -f --fix-owner              Whether to fix file ownership
   -o --owner=OWNER            Files owner [default: puppet]
   -g --group=GROUP            Files group [default: puppet]
   -k --g10k-mount=G10KMOUNT   G10k mount point [default: /g10k]
-  -d --debug                  Print password and full key path
+  -d --debug                  Print messages to console
   -v --version                Print version exit
   -b --build                  Print version and build information and exit
 ```

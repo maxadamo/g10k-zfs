@@ -34,3 +34,6 @@ if which fpm >/dev/null; then
 else
     echo -e "if you want to create RPM and DEB packages, please install fpm:\n - gem install fpm\n"
 fi
+
+git checkout master
+

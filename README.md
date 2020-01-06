@@ -12,7 +12,7 @@ Add ZFS snapshot capability to [G10K](https://github.com/xorpaul/g10k/).
 ## Requirements
 
 * 1\. ZOL (ZFS On Linux) configured on Linux
-* 2\. One ZFS Pool configured (this tool will create a filesystem called `g10k` inside your pool and mount it, by default, on `/g10k`). You can use one of the following steps:
+* 2\. One ZFS Pool configured (this tool will create a filesystem called `g10k` inside your pool and mount it, by default, on `/g10k`). You can follow one of these steps:
   * 2.1\. read this help page: [setup-zfs-storage-pool](https://tutorials.ubuntu.com/tutorial/setup-zfs-storage-pool)
   * 2.2\. use Puppet to create the pool: [zfs_core](https://forge.puppet.com/puppetlabs/zfs_core).
 * 3\.  The default mount point is `/etc/puppetlabs/code`, which means that you need to populate the filesystem with all the files that you had under `/etc/puppetlabs/code`

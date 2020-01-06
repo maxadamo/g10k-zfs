@@ -17,14 +17,13 @@ import (
 )
 
 var (
-	appVersion string
-	buildTime  string
-	//DebugInformation is used to print debug messages
-	DebugInformation bool
+	appVersion       string
+	buildTime        string
+	debugInformation bool
 )
 
 func printString(logMessage string) {
-	if DebugInformation == true {
+	if debugInformation == true {
 		log.Printf(logMessage)
 	}
 }
@@ -72,28 +71,27 @@ func createSnapshot(nextSnap, zfsDevice string) {
 }
 
 func destroySnapshots(snapList []*zfs.Dataset, zfsPool string) {
+	mountedLine := "unmounted"
 	for _, eachDataset := range snapList {
 		zfsDevName := fmt.Sprintf("%v", eachDataset.Name)
 		match, _ := regexp.MatchString("^"+zfsPool+"/g10k@+", zfsDevName)
 		if match == true {
-			// ensure that device is not mounted
 			f, err := os.Open("/proc/self/mountinfo")
 			if err != nil {
 				panic(err)
 			}
 			defer f.Close()
 
-			mountedLine := "unmounted"
-			// Splits on newlines by default.
 			scanner := bufio.NewScanner(f)
 			for scanner.Scan() {
-				if strings.Contains(scanner.Text(), zfsDevName) {
+				if strings.Contains(scanner.Text(), " "+zfsDevName+" ") {
 					mountedLine = scanner.Text()
 				}
 			}
 			if mountedLine != "unmounted" {
 				snapMount := strings.Split(mountedLine, " ")[4]
 				umountSnapshot(snapMount)
+				mountedLine = "unmounted"
 			}
 			zfsDataset, err := zfs.GetDataset(zfsDevName)
 			if err == nil {
@@ -183,9 +181,9 @@ Options:
 		os.Exit(0)
 	}
 
-	DebugInformation = false
+	debugInformation = false
 	if arguments["--debug"] == true {
-		DebugInformation = true
+		debugInformation = true
 	}
 
 	mountpoint := fmt.Sprintf("%v", arguments["--mountpoint"])
@@ -193,7 +191,6 @@ Options:
 	zPool := fmt.Sprintf("%v", arguments["--pool"])
 	zDevice := zPool + g10kMountpoint
 
-	// define snapshot name
 	currentTime := time.Now()
 	nextSnapshot := fmt.Sprintf(currentTime.Format("Date-02-Jan-2006_Time-15.4.5"))
 	snapshotList, _ := zfs.Snapshots("")
